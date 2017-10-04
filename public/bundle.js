@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 1);
+/******/ 	return __webpack_require__(__webpack_require__.s = 2);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -528,60 +528,10 @@ module.exports={"$version":8,"$root":{"version":{"required":true,"type":"enum","
 
 
 //# sourceMappingURL=mapbox-gl.js.map
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
 
 /***/ }),
 /* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
-const mapboxgl = __webpack_require__(0);
-const buildMarker = __webpack_require__(3);
-const selects = __webpack_require__(4); 
-const itinerary = __webpack_require__(5);
-mapboxgl.accessToken = 'pk.eyJ1Ijoic3Bvb25zMTIzIiwiYSI6ImNqOGJydmF2bDAxNXIycW8wd2MxZWV0YXMifQ.e2tHK-kLXKdoXZThDMOMEw';
-
-
-const map = new mapboxgl.Map({
-  container: 'map',
-  center: [-74.009, 40.705], // FullStack coordinates
-  zoom: 12, // starting zoom
-  style: 'mapbox://styles/mapbox/streets-v10' // mapbox has lots of different map styles available.
-});
-
-const marker = buildMarker('activities', [-74.009, 40.705]);
-marker.addTo(map);
-
-
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1,eval)("this");
-} catch(e) {
-	// This works if the window reference is available
-	if(typeof window === "object")
-		g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 const { Marker } = __webpack_require__(0);
@@ -608,6 +558,107 @@ module.exports = buildMarker;
 
 
 /***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mapboxgl = __webpack_require__(0);
+const buildMarker = __webpack_require__(1);
+const selects = __webpack_require__(4);
+const itinerary = __webpack_require__(5);
+
+
+mapboxgl.accessToken = 'pk.eyJ1Ijoic3Bvb25zMTIzIiwiYSI6ImNqOGJydmF2bDAxNXIycW8wd2MxZWV0YXMifQ.e2tHK-kLXKdoXZThDMOMEw';
+
+const map = new mapboxgl.Map({
+  container: 'map', // id of element in html file to add map
+  center: [-74.009, 40.705], // FullStack coordinates
+  zoom: 12, // starting zoom
+  style: 'mapbox://styles/mapbox/streets-v10' // mapbox has lots of different map styles available.
+});
+
+const marker = buildMarker('activities', [-74.009, 40.705]);
+marker.addTo(map);
+
+// ────────────────────────────────────────────────────────────────────────────────
+//   Section to add user created markers to map taken from itinerary.js
+// ────────────────────────────────────────────────────────────────────────────────
+const dropdowns = {
+  hotelsDropdown: document.getElementById('hotels-choices'),
+  restaurantsDropdown: document.getElementById('restaurants-choices'),
+  activitiesDropdown: document.getElementById('activities-choices')
+};
+
+let attractions = {};
+
+
+fetch('/api')
+.then((response) => {
+  return response.json();
+})
+.then((places) => {
+  //associate place coordinates with location name
+  function plotCoordinates(resultVal, attraction) {
+    resultVal[attraction].forEach((place) => {
+      attractions[place.name] = place.place.location;
+    });
+  }
+  plotCoordinates(places, 'hotels');
+  plotCoordinates(places, 'restaurants');
+  plotCoordinates(places, 'activities');
+})
+.then(() => {
+  const options = document.getElementsByClassName('options-btn');
+
+  Array.prototype.forEach.call(options, (button) => {
+    button.addEventListener('click', (event) => {
+      const addButton = event.target;
+      const buttonCategory = addButton.id.slice(0, addButton.id.indexOf('-'));
+
+      const targetList = document.getElementById(`${buttonCategory}-list`);
+      const dropdownValue = dropdowns[`${buttonCategory}Dropdown`].value;
+      const listItem = document.createElement('li');
+      listItem.innerHTML = dropdownValue;
+      targetList.appendChild(listItem);
+
+      // const removeListItem = document.createElement('button', {value: 'X'});
+      // targetList.appendChild(removeListItem);
+
+      const newMarker = buildMarker(buttonCategory, attractions[dropdownValue]);
+      newMarker.addTo(map);
+    });
+  });
+});
+
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1,eval)("this");
+} catch(e) {
+	// This works if the window reference is available
+	if(typeof window === "object")
+		g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
 /* 4 */
 /***/ (function(module, exports) {
 
@@ -627,8 +678,8 @@ fetch('/api')
 .catch(console.log);
 
 // Helper function to populate dropdowns dynamically
-function populateDropdowns(resVal, attraction, dropdown) {
-  resVal[attraction].forEach((attractionLocation) => {
+function populateDropdowns(resultVal, attraction, dropdown) {
+  resultVal[attraction].forEach((attractionLocation) => {
     const attractionLocationOption = document.createElement('option');
     attractionLocationOption.innerHTML = attractionLocation.name;
     dropdown.appendChild(attractionLocationOption);
@@ -638,44 +689,60 @@ function populateDropdowns(resVal, attraction, dropdown) {
 
 /***/ }),
 /* 5 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, exports) {
 
-const buildMarker = __webpack_require__(3); 
+// const buildMarker = require('./marker');
 
-const dropdowns = {
-  hotelsDropdown: document.getElementById('hotels-choices'),
-  restaurantsDropdown: document.getElementById('restaurants-choices'),
-  activitiesDropdown: document.getElementById('activities-choices')
-};
+// ────────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
+// THE FUNCTIONALITY HERE IS THE SAME AS IN INDEX.JS
+// COULDN'T GET THE MARKER TO SHOW UP ON THE MAP DUE TO ERRORS PASSING IT
+// FROM THE INDEX.JS FILE TO HERE
+// ────────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 
-let attractions = {};
+// const dropdowns = {
+//   hotelsDropdown: document.getElementById('hotels-choices'),
+//   restaurantsDropdown: document.getElementById('restaurants-choices'),
+//   activitiesDropdown: document.getElementById('activities-choices')
+// };
 
-fetch('/api')
-.then((response) => {
-  return response.json();
-})
-.then(function (places) {
-  //associate place coordinates with location name
-  attractions = places;
-});
+// let attractions = {};
 
+// fetch('/api')
+// .then((response) => {
+//   return response.json();
+// })
+// .then((places) => {
+//   //associate place coordinates with location name
+//   function plotCoordinates(resultVal, attraction) {
+//     resultVal[attraction].forEach((place) => {
+//       attractions[place.name] = place.place.location;
+//     });
+//   }
+//   plotCoordinates(places, 'hotels');
+//   plotCoordinates(places, 'restaurants');
+//   plotCoordinates(places, 'activities');
+// })
+// .then(() => {
+//   const options = document.getElementsByClassName('options-btn');
 
-const options = document.getElementsByClassName('options-btn');
+//   Array.prototype.forEach.call(options, (button) => {
+//     button.addEventListener('click', (event) => {
+//       const addButton = event.target;
+//       const buttonCategory = addButton.id.slice(0, addButton.id.indexOf('-'));
 
-Array.prototype.forEach.call(options, (button) => {
-  button.addEventListener('click', (event) => {
-    const addButton = event.target;
-    const buttonCategory = addButton.id.slice(0, addButton.id.indexOf('-'));
+//       const targetList = document.getElementById(`${buttonCategory}-list`);
+//       const dropdownValue = dropdowns[`${buttonCategory}Dropdown`].value;
+//       const listItem = document.createElement('li');
+//       listItem.innerHTML = dropdownValue;
+//       targetList.appendChild(listItem);
 
-    const targetList = document.getElementById(`${buttonCategory}-list`);
-    const dropdownValue = dropdowns[`${buttonCategory}Dropdown`].value;
-    const listItem = document.createElement('li'); 
-    listItem.innerHTML = dropdownValue;
-    targetList.appendChild(listItem);
-
-    buildMarker(buttonCategory)
-  });
-});
+//       const marker = buildMarker(buttonCategory, attractions[dropdownValue]);
+//       marker.addTo(map);
+//     });
+//   });
+// });
 
 
 

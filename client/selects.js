@@ -14,8 +14,8 @@ fetch('/api')
 .catch(console.log);
 
 // Helper function to populate dropdowns dynamically
-function populateDropdowns(resVal, attraction, dropdown) {
-  resVal[attraction].forEach((attractionLocation) => {
+function populateDropdowns(resultVal, attraction, dropdown) {
+  resultVal[attraction].forEach((attractionLocation) => {
     const attractionLocationOption = document.createElement('option');
     attractionLocationOption.innerHTML = attractionLocation.name;
     dropdown.appendChild(attractionLocationOption);
