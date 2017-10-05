@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 2);
+/******/ 	return __webpack_require__(__webpack_require__.s = 1);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -528,49 +528,21 @@ module.exports={"$version":8,"$root":{"version":{"required":true,"type":"enum","
 
 
 //# sourceMappingURL=mapbox-gl.js.map
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
 /* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const { Marker } = __webpack_require__(0);
-
-const iconURLs = {
-  hotels: 'http://i.imgur.com/D9574Cu.png',
-  restaurants: 'http://i.imgur.com/cqR6pUI.png',
-  activities: 'http://i.imgur.com/WbMOfMl.png'
-};
-
-const buildMarker = (type, coords) => {
-  if (!iconURLs.hasOwnProperty(type)) {
-    type = 'activities';
-  }
-  const markerEl = document.createElement('div');
-  markerEl.style.backgroundSize = 'contain';
-  markerEl.style.width = '32px';
-  markerEl.style.height = '37px';
-  markerEl.style.backgroundImage = `url(${iconURLs[type]})`;
-  return new Marker(markerEl).setLngLat(coords);
-};
-
-module.exports = buildMarker;
-
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
 const mapboxgl = __webpack_require__(0);
-const buildMarker = __webpack_require__(1);
+const buildMarker = __webpack_require__(3);
 const selects = __webpack_require__(4);
-const itinerary = __webpack_require__(5);
 
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoic3Bvb25zMTIzIiwiYSI6ImNqOGJydmF2bDAxNXIycW8wd2MxZWV0YXMifQ.e2tHK-kLXKdoXZThDMOMEw';
 
 const map = new mapboxgl.Map({
-  container: 'map', // id of element in html file to add map
+  container: 'map', // id of element in html to add map to
   center: [-74.009, 40.705], // FullStack coordinates
   zoom: 12, // starting zoom
   style: 'mapbox://styles/mapbox/streets-v10' // mapbox has lots of different map styles available.
@@ -579,9 +551,9 @@ const map = new mapboxgl.Map({
 const marker = buildMarker('activities', [-74.009, 40.705]);
 marker.addTo(map);
 
-// ────────────────────────────────────────────────────────────────────────────────
-//   Section to add user created markers to map taken from itinerary.js
-// ────────────────────────────────────────────────────────────────────────────────
+//──────────────────────────────────────────────────────────────────────────────
+//   Section to add user-created markers to map
+// ─────────────────────────────────────────────────────────────────────────────
 const dropdowns = {
   hotelsDropdown: document.getElementById('hotels-choices'),
   restaurantsDropdown: document.getElementById('restaurants-choices'),
@@ -589,6 +561,7 @@ const dropdowns = {
 };
 
 let attractions = {};
+let state = [];
 
 
 fetch('/api')
@@ -616,15 +589,33 @@ fetch('/api')
 
       const targetList = document.getElementById(`${buttonCategory}-list`);
       const dropdownValue = dropdowns[`${buttonCategory}Dropdown`].value;
-      const listItem = document.createElement('li');
-      listItem.innerHTML = dropdownValue;
-      targetList.appendChild(listItem);
+      const coordinates = attractions[dropdownValue];
 
-      // const removeListItem = document.createElement('button', {value: 'X'});
-      // targetList.appendChild(removeListItem);
+      // Add chosen value to state to prevent duplicates in list
+      if (state.indexOf(dropdownValue) === -1) {
+        state.push(dropdownValue);
+        const listItem = document.createElement('li');
+        listItem.innerHTML = dropdownValue;
+        targetList.append(listItem);
 
-      const newMarker = buildMarker(buttonCategory, attractions[dropdownValue]);
-      newMarker.addTo(map);
+        const newMarker = buildMarker(buttonCategory, coordinates);
+        newMarker.addTo(map);
+        map.flyTo({ center: coordinates, zoom: 15 });
+
+        const removeListItemButton = document.createElement('button');
+        removeListItemButton.id = 'remove-list-item';
+        removeListItemButton.innerHTML = 'X';
+        listItem.append(removeListItemButton);
+
+        // Remove marker and list item when 'X' is clicked
+        removeListItemButton.addEventListener('click', function remove() {
+          this.removeEventListener('click', remove);
+          listItem.remove();
+          newMarker.remove();
+          state.splice(state.indexOf(dropdownValue), 1);
+          map.flyTo({ center: [-74.009, 40.705], zoom: 12 });
+        });
+      }
     });
   });
 });
@@ -632,7 +623,7 @@ fetch('/api')
 
 
 /***/ }),
-/* 3 */
+/* 2 */
 /***/ (function(module, exports) {
 
 var g;
@@ -656,6 +647,33 @@ try {
 // easier to handle this case. if(!global) { ...}
 
 module.exports = g;
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+const { Marker } = __webpack_require__(0);
+
+const iconURLs = {
+  hotels: 'http://i.imgur.com/D9574Cu.png',
+  restaurants: 'http://i.imgur.com/cqR6pUI.png',
+  activities: 'http://i.imgur.com/WbMOfMl.png'
+};
+
+const buildMarker = (type, coords) => {
+  if (!iconURLs.hasOwnProperty(type)) {
+    type = 'activities';
+  }
+  const markerEl = document.createElement('div');
+  markerEl.style.backgroundSize = 'contain';
+  markerEl.style.width = '32px';
+  markerEl.style.height = '37px';
+  markerEl.style.backgroundImage = `url(${iconURLs[type]})`;
+  return new Marker(markerEl).setLngLat(coords);
+};
+
+module.exports = buildMarker;
 
 
 /***/ }),
@@ -685,65 +703,6 @@ function populateDropdowns(resultVal, attraction, dropdown) {
     dropdown.appendChild(attractionLocationOption);
   });
 }
-
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports) {
-
-// const buildMarker = require('./marker');
-
-// ────────────────────────────────────────────────────────────────────────────────
-// ────────────────────────────────────────────────────────────────────────────────
-// THE FUNCTIONALITY HERE IS THE SAME AS IN INDEX.JS
-// COULDN'T GET THE MARKER TO SHOW UP ON THE MAP DUE TO ERRORS PASSING IT
-// FROM THE INDEX.JS FILE TO HERE
-// ────────────────────────────────────────────────────────────────────────────────
-// ───────────────────────────────────────────────────────────────────────────────
-
-// const dropdowns = {
-//   hotelsDropdown: document.getElementById('hotels-choices'),
-//   restaurantsDropdown: document.getElementById('restaurants-choices'),
-//   activitiesDropdown: document.getElementById('activities-choices')
-// };
-
-// let attractions = {};
-
-// fetch('/api')
-// .then((response) => {
-//   return response.json();
-// })
-// .then((places) => {
-//   //associate place coordinates with location name
-//   function plotCoordinates(resultVal, attraction) {
-//     resultVal[attraction].forEach((place) => {
-//       attractions[place.name] = place.place.location;
-//     });
-//   }
-//   plotCoordinates(places, 'hotels');
-//   plotCoordinates(places, 'restaurants');
-//   plotCoordinates(places, 'activities');
-// })
-// .then(() => {
-//   const options = document.getElementsByClassName('options-btn');
-
-//   Array.prototype.forEach.call(options, (button) => {
-//     button.addEventListener('click', (event) => {
-//       const addButton = event.target;
-//       const buttonCategory = addButton.id.slice(0, addButton.id.indexOf('-'));
-
-//       const targetList = document.getElementById(`${buttonCategory}-list`);
-//       const dropdownValue = dropdowns[`${buttonCategory}Dropdown`].value;
-//       const listItem = document.createElement('li');
-//       listItem.innerHTML = dropdownValue;
-//       targetList.appendChild(listItem);
-
-//       const marker = buildMarker(buttonCategory, attractions[dropdownValue]);
-//       marker.addTo(map);
-//     });
-//   });
-// });
-
 
 
 /***/ })

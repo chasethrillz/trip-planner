@@ -99,5 +99,7 @@ select {
   background: #286090;
 }
 
-
+#remove-list-item {
+  background-color: red;
+}
 

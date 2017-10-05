@@ -1,13 +1,12 @@
 const mapboxgl = require('mapbox-gl');
 const buildMarker = require('./marker');
 const selects = require('./selects');
-const itinerary = require('./itinerary');
 
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoic3Bvb25zMTIzIiwiYSI6ImNqOGJydmF2bDAxNXIycW8wd2MxZWV0YXMifQ.e2tHK-kLXKdoXZThDMOMEw';
 
 const map = new mapboxgl.Map({
-  container: 'map', // id of element in html file to add map
+  container: 'map', // id of element in html to add map to
   center: [-74.009, 40.705], // FullStack coordinates
   zoom: 12, // starting zoom
   style: 'mapbox://styles/mapbox/streets-v10' // mapbox has lots of different map styles available.
@@ -16,9 +15,9 @@ const map = new mapboxgl.Map({
 const marker = buildMarker('activities', [-74.009, 40.705]);
 marker.addTo(map);
 
-// ────────────────────────────────────────────────────────────────────────────────
-//   Section to add user created markers to map taken from itinerary.js
-// ────────────────────────────────────────────────────────────────────────────────
+//──────────────────────────────────────────────────────────────────────────────
+//   Section to add user-created markers to map
+// ─────────────────────────────────────────────────────────────────────────────
 const dropdowns = {
   hotelsDropdown: document.getElementById('hotels-choices'),
   restaurantsDropdown: document.getElementById('restaurants-choices'),
@@ -26,6 +25,7 @@ const dropdowns = {
 };
 
 let attractions = {};
+let state = [];
 
 
 fetch('/api')
@@ -53,15 +53,33 @@ fetch('/api')
 
       const targetList = document.getElementById(`${buttonCategory}-list`);
       const dropdownValue = dropdowns[`${buttonCategory}Dropdown`].value;
-      const listItem = document.createElement('li');
-      listItem.innerHTML = dropdownValue;
-      targetList.appendChild(listItem);
+      const coordinates = attractions[dropdownValue];
 
-      // const removeListItem = document.createElement('button', {value: 'X'});
-      // targetList.appendChild(removeListItem);
+      // Add chosen value to state to prevent duplicates in list
+      if (state.indexOf(dropdownValue) === -1) {
+        state.push(dropdownValue);
+        const listItem = document.createElement('li');
+        listItem.innerHTML = dropdownValue;
+        targetList.append(listItem);
 
-      const newMarker = buildMarker(buttonCategory, attractions[dropdownValue]);
-      newMarker.addTo(map);
+        const newMarker = buildMarker(buttonCategory, coordinates);
+        newMarker.addTo(map);
+        map.flyTo({ center: coordinates, zoom: 15 });
+
+        const removeListItemButton = document.createElement('button');
+        removeListItemButton.id = 'remove-list-item';
+        removeListItemButton.innerHTML = 'X';
+        listItem.append(removeListItemButton);
+
+        // Remove marker and list item when 'X' is clicked
+        removeListItemButton.addEventListener('click', function remove() {
+          this.removeEventListener('click', remove);
+          listItem.remove();
+          newMarker.remove();
+          state.splice(state.indexOf(dropdownValue), 1);
+          map.flyTo({ center: [-74.009, 40.705], zoom: 12 });
+        });
+      }
     });
   });
 });
